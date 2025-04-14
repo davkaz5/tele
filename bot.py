@@ -8,10 +8,11 @@ BOT_TOKEN = "7390788587:AAGk0k_C8O69RQFQ8zIxkqhVPhICXNPsfjU"
 
 logging.basicConfig(level=logging.INFO)
 
-# Функция для "умного" анализа URL
+# Функция для умного анализа URL
 def smart_analysis(url: str) -> str:
     decoded_url = unquote(url.lower())
-
+    
+    # Определение информации о товаре по URL
     title_parts = []
     if "hugo" in decoded_url:
         title_parts.append("Hugo Boss")
@@ -26,9 +27,8 @@ def smart_analysis(url: str) -> str:
 
     title = " / ".join(title_parts) if title_parts else "Неопределено"
 
-    recommendations = []
-
     # Персонализированные рекомендации
+    recommendations = []
     if "tester" in decoded_url:
         recommendations.append("Укажи в заголовке и описании, что это тестер.")
     if "hugo" in decoded_url:
@@ -38,13 +38,21 @@ def smart_analysis(url: str) -> str:
     if "parfum" in decoded_url or "парфюм" in decoded_url:
         recommendations.append("Уточни тип аромата (парфюмерная вода, туалетная и т.д.)")
 
-    # Общие советы
+    # Рекомендации по отзывам
+    recommendations.append("Проверь, чтобы отзывы были актуальными и связаны с качеством товара.")
+    recommendations.append("Если есть вопросы, ответь на них в карточке товара.")
+
+    # SEO и описание
     recommendations += [
         "Загрузи 3–5 качественных фото товара (в том числе упаковки).",
         "Добавь описание: аромат, ноты, стойкость, страна производства.",
         "Ответь на популярные вопросы покупателей.",
         "Проверь, чтобы заполнены все характеристики для фильтрации.",
+        "Оптимизируй карточку товара с учетом SEO (ключевые слова).",
     ]
+    
+    # Рекомендации по улучшению карточки товара
+    recommendations.append("Не забудь оптимизировать карточку товара с учетом текущих SEO-трендов и требований покупателей.")
 
     response = f"🔍 *Анализ товара:*\n"
     response += f"📌 *Название:* {title}\n"
@@ -60,7 +68,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if "ozon.ru" in user_text:
         reply = smart_analysis(user_text)
     else:
-        reply = "Пришли ссылку на товар с Ozon для анализа."
+        reply = "Пришли ссылку на товар Ozon для анализа."
 
     await update.message.reply_text(reply, parse_mode='Markdown')
 
