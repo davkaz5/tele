@@ -5,7 +5,7 @@ from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, Con
 
 # 🔐 Вставь сюда свои ключи
 BOT_TOKEN = "7390788587:AAGk0k_C8O69RQFQ8zIxkqhVPhICXNPsfjU"
-OPENAI_API_KEY = "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"
+OPENAI_API_KEY = "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"
 
 openai.api_key = OPENAI_API_KEY
 logging.basicConfig(level=logging.INFO)
