@@ -28,7 +28,7 @@ def analyze_competitors(competitor_price, your_price, competitor_reviews, your_r
 
     # Сравниваем цену
     if competitor_price < your_price:
-        recommendations.append("Снизьте цену для привлечения покупателей.")
+        recommendations.append("Davoi asa tox gine ichacni :).")
 
     # Сравниваем отзывы
     if competitor_reviews > your_reviews:
@@ -38,7 +38,7 @@ def analyze_competitors(competitor_price, your_price, competitor_reviews, your_r
 
 # Обработчик команды /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Привет! Отправь мне ссылку на товар, и я проанализирую конкурентов!")
+    await update.message.reply_text("Привет Arsen! Отправь мне ссылку на товар, и я проанализирую конкурентов!")
 
 # Обработчик анализа товара
 async def analyze(update: Update, context: ContextTypes.DEFAULT_TYPE):
