@@ -1,3 +1,2 @@
 python-telegram-bot
 openai
-pip install openai==0.28
