@@ -1,41 +1,57 @@
 import logging
-import openai
+import requests
+from bs4 import BeautifulSoup
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
 
-# 🔐 Вставь сюда свои ключи
 BOT_TOKEN = "7390788587:AAGk0k_C8O69RQFQ8zIxkqhVPhICXNPsfjU"
-OPENAI_API_KEY = "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"
 
-openai.api_key = OPENAI_API_KEY
 logging.basicConfig(level=logging.INFO)
 
-# Функция для общения с ChatGPT
-async def chatgpt_reply(prompt):
+async def analyze_ozon_link(url: str) -> str:
     try:
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",  # Или gpt-4 если доступен
-            messages=[{"role": "user", "content": prompt}]
+        headers = {
+            "User-Agent": "Mozilla/5.0"
+        }
+        response = requests.get(url, headers=headers)
+        soup = BeautifulSoup(response.text, "html.parser")
+
+        title_tag = soup.find("h1")
+        title = title_tag.get_text(strip=True) if title_tag else "Название не найдено"
+
+        reviews_block = soup.find("span", string=lambda text: text and "отзыва" in text)
+        reviews = reviews_block.get_text(strip=True) if reviews_block else "Отзывы не найдены"
+
+        recommendations = (
+            f"🔍 *Анализ товара:*\n"
+            f"📌 *Название:* {title}\n"
+            f"💬 *Отзывы:* {reviews}\n\n"
+            f"✅ *Рекомендации:*\n"
+            f"1. Убедись, что добавлены ключевые слова в описание.\n"
+            f"2. Загрузите качественные фотографии с разных ракурсов.\n"
+            f"3. Ответьте на вопросы покупателей.\n"
+            f"4. Уточните данные об аромате, составе и стойкости.\n"
+            f"5. Регулярно обновляйте описание для улучшения SEO."
         )
-        return response['choices'][0]['message']['content']
+        return recommendations
     except Exception as e:
-        return f"Ошибка: {e}"
+        return f"Ошибка анализа: {e}"
 
-# Обработка сообщений
-async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_text = update.message.text
-    reply = await chatgpt_reply(user_text)
-    await update.message.reply_text(reply)
-
-# Стартовая команда
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Привет! Я ИИ-бот. Задай мне любой вопрос!")
+    await update.message.reply_text("Привет! Отправь мне ссылку на товар с Ozon, и я выдам рекомендации.")
 
-# Запуск бота
+async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = update.message.text
+    if "ozon.ru" in text:
+        result = await analyze_ozon_link(text)
+        await update.message.reply_text(result, parse_mode="Markdown")
+    else:
+        await update.message.reply_text("Пожалуйста, отправь ссылку на товар с Ozon.")
+
 def main():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_link))
     app.run_polling()
 
 if __name__ == "__main__":
