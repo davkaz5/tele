@@ -1,52 +1,70 @@
 import logging
+from urllib.parse import unquote
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
 
-# 🔐 Вставь сюда свой токен бота
+# 🔐 Вставь свой токен бота
 BOT_TOKEN = "7390788587:AAGk0k_C8O69RQFQ8zIxkqhVPhICXNPsfjU"
 
-# Логирование
 logging.basicConfig(level=logging.INFO)
 
-# AI-анализ ссылки Ozon (быстрый)
-async def analyze_ozon_link(url: str) -> str:
-    keywords = []
-    if "hugo" in url.lower():
-        keywords.append("Hugo Boss")
-    if "ma-vie" in url.lower():
-        keywords.append("Ma Vie")
-    if "парфюм" in url.lower() or "voda" in url.lower():
-        keywords.append("парфюмерная вода")
+# Функция для "умного" анализа URL
+def smart_analysis(url: str) -> str:
+    decoded_url = unquote(url.lower())
 
-    title = "Товар из Ozon"
-    if keywords:
-        title = " / ".join(keywords)
+    title_parts = []
+    if "hugo" in decoded_url:
+        title_parts.append("Hugo Boss")
+    if "ma-vie" in decoded_url:
+        title_parts.append("Ma Vie")
+    if "parfum" in decoded_url or "парфюм" in decoded_url:
+        title_parts.append("парфюм")
+    if "75-ml" in decoded_url or "75мл" in decoded_url:
+        title_parts.append("75 мл")
+    if "tester" in decoded_url:
+        title_parts.append("Тестер")
 
-    recommendations = (
-        f"🔍 *Анализ товара:*\n"
-        f"📌 *Название:* {title}\n"
-        f"💬 *Отзывы:* Оценки не загружены (бот работает в AI-режиме)\n\n"
-        f"✅ *Рекомендации:*\n"
-        f"1. Убедись, что заголовок содержит ключевые слова: {'; '.join(keywords) if keywords else 'основные бренды и аромат'}.\n"
-        f"2. Добавь описание аромата, стойкости и страны производства.\n"
-        f"3. Загрузите 3-5 качественных фото товара.\n"
-        f"4. Используй блок “часто задаваемые вопросы”.\n"
-        f"5. Проверь, чтобы в карточке были заполнены все характеристики.\n"
-    )
-    return recommendations
+    title = " / ".join(title_parts) if title_parts else "Неопределено"
+
+    recommendations = []
+
+    # Персонализированные рекомендации
+    if "tester" in decoded_url:
+        recommendations.append("Укажи в заголовке и описании, что это тестер.")
+    if "hugo" in decoded_url:
+        recommendations.append("Добавь ключевые слова: Hugo, Boss, аромат для женщин/мужчин.")
+    if "75" in decoded_url:
+        recommendations.append("Укажи объём — 75 мл — в заголовке и характеристиках.")
+    if "parfum" in decoded_url or "парфюм" in decoded_url:
+        recommendations.append("Уточни тип аромата (парфюмерная вода, туалетная и т.д.)")
+
+    # Общие советы
+    recommendations += [
+        "Загрузи 3–5 качественных фото товара (в том числе упаковки).",
+        "Добавь описание: аромат, ноты, стойкость, страна производства.",
+        "Ответь на популярные вопросы покупателей.",
+        "Проверь, чтобы заполнены все характеристики для фильтрации.",
+    ]
+
+    response = f"🔍 *Анализ товара:*\n"
+    response += f"📌 *Название:* {title}\n"
+    response += f"💬 *Отзывы:* AI-режим — данные не загружаются\n\n"
+    response += f"✅ *Рекомендации:*\n" + "\n".join([f"{i+1}. {r}" for i, r in enumerate(recommendations)])
+
+    return response
 
 # Обработка сообщений
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_text = update.message.text
 
     if "ozon.ru" in user_text:
-        reply = await analyze_ozon_link(user_text)
+        reply = smart_analysis(user_text)
     else:
-        reply = "Пожалуйста, пришли ссылку на товар с Ozon для анализа."
+        reply = "Пришли ссылку на товар с Ozon для анализа."
 
     await update.message.reply_text(reply, parse_mode='Markdown')
 
-# Стартовая команда
+# Команда /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Привет! Пришли ссылку на товар Ozon, и я дам рекомендации по улучшению карточки.")
 
