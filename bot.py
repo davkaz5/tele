@@ -5,7 +5,7 @@ import feedparser
 from datetime import datetime, timedelta
 
 # 🔐 Вставь токен и чат ID
-BOT_TOKEN = "СЮДА_ТОКЕН"
+BOT_TOKEN = "7390788587:AAGk0k_C8O69RQFQ8zIxkqhVPhICXNPsfjU"
 CHAT_ID = 6372974933
 
 # RSS-ленты для новостей
