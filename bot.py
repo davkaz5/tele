@@ -5,7 +5,7 @@ import feedparser
 import re
 
 BOT_TOKEN = "7390788587:AAGk0k_C8O69RQFQF8zIxkqhVPhICXNPsfjU"
-CHAT_ID = 6372974933
+CHAT_ID = "6372974933"
 
 FEEDS = [
     "https://lenta.ru/rss/news",
