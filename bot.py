@@ -2,13 +2,14 @@ import logging
 import asyncio
 import telegram
 import feedparser
+import re
 from datetime import datetime, timedelta
 
-# 🔐 Вставь токен и чат ID
+# 🔐 Токен и ID чата
 BOT_TOKEN = "7390788587:AAGk0k_C8O69RQFQ8zIxkqhVPhICXNPsfjU"
 CHAT_ID = 6372974933
 
-# RSS-ленты для новостей
+# RSS-ленты
 FEEDS = [
     "https://lenta.ru/rss/news",
     "https://www.rbc.ru/rss/",
@@ -22,8 +23,11 @@ KEYWORDS = ["Россия", "Ozon", "Wildberries", "маркетплейс", "Al
 logging.basicConfig(level=logging.INFO)
 bot = telegram.Bot(token=BOT_TOKEN)
 
-# Хранение уже отправленных новостей
 sent_links = set()
+
+# Экранирование Markdown-символов
+def escape_markdown(text):
+    return re.sub(r'([_*\[\]()~`>#+=|{}.!-])', r'\\\1', text)
 
 async def fetch_and_send_news():
     while True:
@@ -35,15 +39,16 @@ async def fetch_and_send_news():
                     continue
 
                 if any(keyword.lower() in entry.title.lower() for keyword in KEYWORDS):
-                    message = f"📰 *{entry.title}*\n{entry.link}"
+                    title = escape_markdown(entry.title)
+                    message = f"📰 *{title}*\n{entry.link}"
                     try:
-                        await bot.send_message(chat_id=CHAT_ID, text=message, parse_mode=telegram.constants.ParseMode.MARKDOWN)
+                        await bot.send_message(chat_id=CHAT_ID, text=message, parse_mode=telegram.constants.ParseMode.MARKDOWN_V2)
                         sent_links.add(entry.link)
                         await asyncio.sleep(2)
                     except Exception as e:
                         logging.error(f"Ошибка при отправке: {e}")
 
-        await asyncio.sleep(600)  # 10 минут
+        await asyncio.sleep(600)  # каждые 10 минут
 
 async def main():
     await fetch_and_send_news()
