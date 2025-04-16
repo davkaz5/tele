@@ -1,6 +1,6 @@
 import logging
 import requests
-from telegram import Update
+from telegram import Update, Bot
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import asyncio
@@ -51,13 +51,13 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Привет! Я собираю новости из Telegram-каналов о маркетплейсах и электронной коммерции.")
 
 # Планировщик для запуска бота каждые 10 минут
-async def scheduler():
+async def scheduler(bot: Bot):
     scheduler = AsyncIOScheduler()
-    scheduler.add_job(fetch_news_and_send, 'interval', minutes=10)
+    scheduler.add_job(fetch_news_and_send, 'interval', minutes=10, args=[bot])
     scheduler.start()
 
 # Функция для получения новостей и отправки их пользователю
-async def fetch_news_and_send():
+async def fetch_news_and_send(bot: Bot):
     # Предположим, что вы хотите отправить новости всем пользователям
     # Здесь нужен Telegram Chat ID для отправки
     chat_id = '6372974933'
@@ -69,14 +69,18 @@ async def fetch_news_and_send():
         await bot.send_message(chat_id=chat_id, text=message, parse_mode='Markdown')
 
 # Запуск бота
-def main():
+async def main():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
-    app.add_handler(CommandHandler("start", start))
 
     # Запуск планировщика
-    asyncio.run(scheduler())
+    bot = Bot(BOT_TOKEN)
+    await scheduler(bot)
 
-    app.run_polling()
+    # Обработка команды start
+    app.add_handler(CommandHandler("start", start))
+
+    # Запуск бота
+    await app.run_polling()
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
