@@ -1,61 +1,44 @@
 import logging
-import requests
-from bs4 import BeautifulSoup
-from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
-from apscheduler.schedulers.background import BackgroundScheduler
 import asyncio
+import telegram
+from bs4 import BeautifulSoup
+import requests
 
-# 🔐 Вставь свой токен бота
 BOT_TOKEN = "7390788587:AAGk0k_C8O69RQFQ8zIxkqhVPhICXNPsfjU"
+CHAT_ID = 6372974933  # Твой chat_id
 
 logging.basicConfig(level=logging.INFO)
+bot = telegram.Bot(token=BOT_TOKEN)
 
-# Глобальная переменная для хранения приложения Telegram
-app = None
-
-# Функция парсинга новостей
-async def fetch_and_send_news():
+# Функция для поиска новостей про Россию
+async def fetch_news():
     try:
-        url = "https://news.google.com/rss/search?q=%D0%A0%D0%BE%D1%81%D1%81%D0%B8%D1%8F&hl=ru&gl=RU&ceid=RU:ru"
+        url = "https://news.google.com/search?q=россия&hl=ru&gl=RU&ceid=RU%3Aru"
         response = requests.get(url)
-        soup = BeautifulSoup(response.content, features="xml")
-        items = soup.findAll("item")[:5]  # Берем топ-5 новостей
+        soup = BeautifulSoup(response.text, "html.parser")
+        articles = soup.select("article h3 a")
 
-        message = "📰 *Свежие новости про Россию:*\n"
-        for item in items:
-            title = item.title.text
-            link = item.link.text
-            message += f"\n- [{title}]({link})"
-
-        # Отправляем сообщение всем пользователям, которые запустили бота
-        for chat_id in subscribers:
-            await app.bot.send_message(chat_id=chat_id, text=message, parse_mode='Markdown', disable_web_page_preview=True)
+        news = []
+        for a in articles[:5]:
+            title = a.text
+            link = "https://news.google.com" + a["href"][1:]
+            news.append(f"📰 {title}\n🔗 {link}")
+        return "\n\n".join(news)
 
     except Exception as e:
-        logging.error(f"Ошибка при получении новостей: {e}")
+        return f"Ошибка при получении новостей: {e}"
 
-# Список подписчиков
-subscribers = set()
+# Фоновая задача: отправка новостей каждые 10 минут
+async def send_news_periodically():
+    while True:
+        logging.info("Получаю новости...")
+        news = await fetch_news()
+        await bot.send_message(chat_id=CHAT_ID, text=news)
+        await asyncio.sleep(600)  # 10 минут
 
-# Команда /start
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    chat_id = update.effective_chat.id
-    subscribers.add(chat_id)
-    await update.message.reply_text("Привет! Я буду присылать свежие новости про Россию каждые 10 минут.")
-
-# Главная функция запуска
-def main():
-    global app
-    app = ApplicationBuilder().token(BOT_TOKEN).build()
-
-    app.add_handler(CommandHandler("start", start))
-
-    scheduler = BackgroundScheduler()
-    scheduler.add_job(lambda: asyncio.run(fetch_and_send_news()), 'interval', minutes=10)
-    scheduler.start()
-
-    app.run_polling()
+# Основной запуск
+async def main():
+    await send_news_periodically()
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
