@@ -39,12 +39,11 @@ async def fetch_news():
     return news_data
 
 # Функция для отправки новостей в Telegram
-async def send_news_to_telegram(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    news_data = await fetch_news()
+async def send_news_to_telegram(chat_id, news_data):
     for news in news_data:
         message = f"📰 *Новости из канала {news['channel']}*\n\n"
         message += f"🔗 [Ссылка на новость]({news['link']})\n"
-        await update.message.reply_text(message, parse_mode='Markdown')
+        await app.send_message(chat_id=chat_id, text=message, parse_mode='Markdown')
 
 # Стартовая команда
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -62,23 +61,7 @@ async def fetch_news_and_send():
     # Здесь нужен Telegram Chat ID для отправки
     chat_id = '6372974933'
     news_data = await fetch_news()
-    for news in news_data:
-        message = f"📰 *Новости из канала {news['channel']}*\n\n"
-        message += f"🔗 [Ссылка на новость]({news['link']})\n"
-        # Отправка новости в Telegram
-        await bot.send_message(chat_id=chat_id, text=message, parse_mode='Markdown')
+    await send_news_to_telegram(chat_id, news_data)
 
 # Запуск бота
-async def main():
-    app = ApplicationBuilder().token(BOT_TOKEN).build()
-    app.add_handler(CommandHandler("start", start))
-
-    # Запуск планировщика
-    await scheduler()
-
-    # Запуск бота
-    await app.run_polling()
-
-if __name__ == "__main__":
-    # Запуск бота без asyncio.run()
-    asyncio.run(main())
+async def
