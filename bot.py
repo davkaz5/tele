@@ -72,8 +72,4 @@ async def main():
     await scheduler(app)
 
     # Запуск бота
-    await app.run_polling()
-
-if __name__ == "__main__":
-    # Запуск бота
-    asyncio.run(main())
+    await app
