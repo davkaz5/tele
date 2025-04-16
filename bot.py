@@ -1,80 +1,52 @@
 import logging
-import requests
-from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import asyncio
+import telegram
+import feedparser
+from datetime import datetime, timedelta
 
-# Вставьте сюда свой токен бота и API ключ TgStat
-BOT_TOKEN = '7390788587:AAGk0k_C8O69RQFQ8zIxkqhVPhICXNPsfjU'
-TGSTAT_API_KEY = 'ce099f638fefb344c9389e9becda5f72'
+# 🔐 Вставь токен и чат ID
+BOT_TOKEN = "СЮДА_ТОКЕН"
+CHAT_ID = 6372974933
 
-# Каналы для мониторинга
-channels = [
-    '@ecomnews', 
-    '@marketplaces_ru', 
-    '@ozonnews', 
-    '@wildberriesnews', 
-    '@aliexpressnews'
+# RSS-ленты для новостей
+FEEDS = [
+    "https://lenta.ru/rss/news",
+    "https://www.rbc.ru/rss/",
+    "https://www.vedomosti.ru/rss/news.xml",
+    "https://www.cnews.ru/inc/rss/news.xml",
+    "https://www.kommersant.ru/RSS/news.xml",
 ]
 
-# Настройка логирования
+KEYWORDS = ["Россия", "Ozon", "Wildberries", "маркетплейс", "AliExpress", "торговля", "интернет-магазин"]
+
 logging.basicConfig(level=logging.INFO)
+bot = telegram.Bot(token=BOT_TOKEN)
 
-# Функция для получения новостей из TGStat
-async def fetch_news():
-    news_data = []
-    for channel in channels:
-        url = f'https://api.tgstat.ru/v1/channels/{channel}/posts?token={TGSTAT_API_KEY}&limit=5'
-        response = requests.get(url)
-        if response.status_code == 200:
-            data = response.json()
-            posts = data.get('data', [])
-            for post in posts:
-                news_data.append({
-                    'channel': channel,
-                    'title': post.get('title'),
-                    'link': post.get('url')
-                })
-    return news_data
+# Хранение уже отправленных новостей
+sent_links = set()
 
-# Функция для отправки новостей в Telegram
-async def send_news_to_telegram(chat_id, news_data):
-    for news in news_data:
-        message = f"📰 *Новости из канала {news['channel']}*\n\n"
-        message += f"🔗 [Ссылка на новость]({news['link']})\n"
-        await app.send_message(chat_id=chat_id, text=message, parse_mode='Markdown')
+async def fetch_and_send_news():
+    while True:
+        logging.info("🔍 Проверка новостей...")
+        for url in FEEDS:
+            feed = feedparser.parse(url)
+            for entry in feed.entries:
+                if entry.link in sent_links:
+                    continue
 
-# Стартовая команда
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Привет! Я собираю новости из Telegram-каналов о маркетплейсах и электронной коммерции.")
+                if any(keyword.lower() in entry.title.lower() for keyword in KEYWORDS):
+                    message = f"📰 *{entry.title}*\n{entry.link}"
+                    try:
+                        await bot.send_message(chat_id=CHAT_ID, text=message, parse_mode=telegram.constants.ParseMode.MARKDOWN)
+                        sent_links.add(entry.link)
+                        await asyncio.sleep(2)
+                    except Exception as e:
+                        logging.error(f"Ошибка при отправке: {e}")
 
-# Планировщик для запуска бота каждые 10 минут
-def start_scheduler():
-    scheduler = AsyncIOScheduler()
-    scheduler.add_job(fetch_news_and_send, 'interval', minutes=10)
-    scheduler.start()
+        await asyncio.sleep(600)  # 10 минут
 
-# Функция для получения новостей и отправки их пользователю
-async def fetch_news_and_send():
-    # Предположим, что вы хотите отправить новости всем пользователям
-    # Здесь нужен Telegram Chat ID для отправки
-    chat_id = '6372974933'
-    news_data = await fetch_news()
-    await send_news_to_telegram(chat_id, news_data)
-
-# Запуск бота
 async def main():
-    global app
-    app = ApplicationBuilder().token(BOT_TOKEN).build()
-    app.add_handler(CommandHandler("start", start))
-
-    # Запуск планировщика
-    start_scheduler()
-
-    # Запуск бота без необходимости открытия порта
-    await app.run_polling(drop_pending_updates=True)
+    await fetch_and_send_news()
 
 if __name__ == "__main__":
-    # Используем текущий цикл событий для запуска бота и планировщика
-    asyncio.get_event_loop().run_until_complete(main())
+    asyncio.run(main())
