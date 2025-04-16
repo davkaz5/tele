@@ -50,7 +50,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Привет! Я собираю новости из Telegram-каналов о маркетплейсах и электронной коммерции.")
 
 # Планировщик для запуска бота каждые 10 минут
-async def scheduler():
+def start_scheduler():
     scheduler = AsyncIOScheduler()
     scheduler.add_job(fetch_news_and_send, 'interval', minutes=10)
     scheduler.start()
@@ -70,11 +70,11 @@ async def main():
     app.add_handler(CommandHandler("start", start))
 
     # Запуск планировщика
-    await scheduler()
+    start_scheduler()
 
     # Запуск бота без необходимости открытия порта
     await app.run_polling(drop_pending_updates=True)
 
 if __name__ == "__main__":
-    # Запуск бота без asyncio.run()
-    asyncio.run(main())
+    # Используем текущий цикл событий для запуска бота и планировщика
+    asyncio.get_event_loop().run_until_complete(main())
