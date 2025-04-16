@@ -1,2 +1,4 @@
 feedparser
 python-telegram-bot==20.0
+python-telegram-bot
+feedparser
