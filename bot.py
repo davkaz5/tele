@@ -1,44 +1,52 @@
 import logging
 import asyncio
 import telegram
-from bs4 import BeautifulSoup
-import requests
+import feedparser
+from datetime import datetime, timedelta
 
+# 🔐 Вставь токен и чат ID
 BOT_TOKEN = "7390788587:AAGk0k_C8O69RQFQ8zIxkqhVPhICXNPsfjU"
-CHAT_ID = 6372974933  # Твой chat_id
+CHAT_ID = 6372974933
+
+# RSS-ленты для новостей
+FEEDS = [
+    "https://lenta.ru/rss/news",
+    "https://www.rbc.ru/rss/",
+    "https://www.vedomosti.ru/rss/news.xml",
+    "https://www.cnews.ru/inc/rss/news.xml",
+    "https://www.kommersant.ru/RSS/news.xml",
+]
+
+KEYWORDS = ["Россия", "Ozon", "Wildberries", "маркетплейс", "AliExpress", "торговля", "интернет-магазин"]
 
 logging.basicConfig(level=logging.INFO)
 bot = telegram.Bot(token=BOT_TOKEN)
 
-# Функция для поиска новостей про Россию
-async def fetch_news():
-    try:
-        url = "https://news.google.com/search?q=россия&hl=ru&gl=RU&ceid=RU%3Aru"
-        response = requests.get(url)
-        soup = BeautifulSoup(response.text, "html.parser")
-        articles = soup.select("article h3 a")
+# Хранение уже отправленных новостей
+sent_links = set()
 
-        news = []
-        for a in articles[:5]:
-            title = a.text
-            link = "https://news.google.com" + a["href"][1:]
-            news.append(f"📰 {title}\n🔗 {link}")
-        return "\n\n".join(news)
-
-    except Exception as e:
-        return f"Ошибка при получении новостей: {e}"
-
-# Фоновая задача: отправка новостей каждые 10 минут
-async def send_news_periodically():
+async def fetch_and_send_news():
     while True:
-        logging.info("Получаю новости...")
-        news = await fetch_news()
-        await bot.send_message(chat_id=CHAT_ID, text=news)
+        logging.info("🔍 Проверка новостей...")
+        for url in FEEDS:
+            feed = feedparser.parse(url)
+            for entry in feed.entries:
+                if entry.link in sent_links:
+                    continue
+
+                if any(keyword.lower() in entry.title.lower() for keyword in KEYWORDS):
+                    message = f"📰 *{entry.title}*\n{entry.link}"
+                    try:
+                        await bot.send_message(chat_id=CHAT_ID, text=message, parse_mode=telegram.constants.ParseMode.MARKDOWN)
+                        sent_links.add(entry.link)
+                        await asyncio.sleep(2)
+                    except Exception as e:
+                        logging.error(f"Ошибка при отправке: {e}")
+
         await asyncio.sleep(600)  # 10 минут
 
-# Основной запуск
 async def main():
-    await send_news_periodically()
+    await fetch_and_send_news()
 
 if __name__ == "__main__":
     asyncio.run(main())
