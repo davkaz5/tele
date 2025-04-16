@@ -4,8 +4,8 @@ import telegram
 import feedparser
 import re
 
-BOT_TOKEN = "7390788587:AAGk0k_C8O69RQFQF8zIxkqhVPhICXNPsfjU"
-CHAT_ID = "6372974933"
+BOT_TOKEN = "7390788587:AAGk0k_C8O69RQFQ8zIxkqhVPhICXNPsfjU"
+CHAT_ID = 6372974933  # Убедись, что это числовой ID
 
 FEEDS = [
     "https://lenta.ru/rss/news",
@@ -38,9 +38,12 @@ async def fetch_and_send_news():
                     link = escape_markdown(entry.link)
                     message = f"📰 *{title}*\n{link}"
                     try:
+                        # Проверяем, может ли бот отправить сообщение
                         await bot.send_message(chat_id=CHAT_ID, text=message, parse_mode=telegram.constants.ParseMode.MARKDOWN_V2)
                         sent_links.add(entry.link)
                         await asyncio.sleep(2)
+                    except telegram.error.Unauthorized:
+                        logging.error("Ошибка авторизации: Проверь токен или доступ к боту.")
                     except Exception as e:
                         logging.error(f"Ошибка при отправке: {e}")
 
