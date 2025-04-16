@@ -47,7 +47,7 @@ async def fetch_and_send_news():
                     except Exception as e:
                         logging.error(f"Ошибка при отправке: {e}")
 
-        await asyncio.sleep(600)  # Каждые 10 минут
+        await asyncio.sleep(1200)  # Каждые 10 минут
 
 async def main():
     await fetch_and_send_news()
