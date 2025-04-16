@@ -9,9 +9,6 @@ CHAT_ID = 6372974933
 
 FEEDS = [
     "https://lenta.ru/rss/news",
-    "https://www.rbc.ru/rss/",
-    "https://www.vedomosti.ru/rss/news.xml",
-    "https://www.cnews.ru/inc/rss/news.xml",
     "https://www.kommersant.ru/RSS/news.xml",
 ]
 
