@@ -39,7 +39,7 @@ async def fetch_news():
     return news_data
 
 # Функция для отправки новостей в Telegram
-async def send_news_to_telegram(chat_id, news_data):
+async def send_news_to_telegram(app, chat_id, news_data):
     for news in news_data:
         message = f"📰 *Новости из канала {news['channel']}*\n\n"
         message += f"🔗 [Ссылка на новость]({news['link']})\n"
@@ -50,18 +50,30 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Привет! Я собираю новости из Telegram-каналов о маркетплейсах и электронной коммерции.")
 
 # Планировщик для запуска бота каждые 10 минут
-async def scheduler():
+async def scheduler(app):
     scheduler = AsyncIOScheduler()
-    scheduler.add_job(fetch_news_and_send, 'interval', minutes=10)
+    scheduler.add_job(fetch_news_and_send, 'interval', minutes=10, args=[app])
     scheduler.start()
 
 # Функция для получения новостей и отправки их пользователю
-async def fetch_news_and_send():
+async def fetch_news_and_send(app):
     # Предположим, что вы хотите отправить новости всем пользователям
     # Здесь нужен Telegram Chat ID для отправки
     chat_id = '6372974933'
     news_data = await fetch_news()
-    await send_news_to_telegram(chat_id, news_data)
+    await send_news_to_telegram(app, chat_id, news_data)
 
 # Запуск бота
-async def
+async def main():
+    app = ApplicationBuilder().token(BOT_TOKEN).build()
+    app.add_handler(CommandHandler("start", start))
+
+    # Запуск планировщика
+    await scheduler(app)
+
+    # Запуск бота
+    await app.run_polling()
+
+if __name__ == "__main__":
+    # Запуск бота
+    asyncio.run(main())
