@@ -1,2 +1,2 @@
-python-telegram-bot==20.1
-feedparser==6.0.8
+python-telegram-bot==20.3
+telethon==1.32.0
